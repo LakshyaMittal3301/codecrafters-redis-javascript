@@ -96,7 +96,7 @@ class SlaveServer {
                 }
                 idx += 2;
                 let rdbFileData = masterResponse.slice(idx, idx + sizeOfRDB);
-                idx += sizeOfRDB;
+                idx += sizeOfRDB - 1;
                 masterResponse = data.toString().slice(idx);
                 this.masterBuffer = '';
                 this.handshakeStep = 5;
@@ -142,6 +142,7 @@ class SlaveServer {
             let currentRequest = requestParser.currentRequest;
             this.handleCommand(this.masterSocket, args, currentRequest);
         }
+        this.masterBuffer = requestParser.getRemainingRequest();
     }
 
     handleCommand(socket, args, request){
@@ -155,6 +156,10 @@ class SlaveServer {
                 break;
             case 'get':
                 socket.write(this.handleGet(args.slice(1)));
+                break;
+            case 'replconf':
+                socket.write(this.handleReplconf(args.slice(1)));
+                break;
             
         }
     }
@@ -187,6 +192,14 @@ class SlaveServer {
             return Encoder.createBulkString('', true);
         }
         return Encoder.createBulkString(value);
+    }
+
+    handleReplconf(args){
+        return Encoder.createArray([
+            Encoder.createBulkString('REPLCONF'),
+            Encoder.createBulkString('ACK'),
+            Encoder.createBulkString(`0`),
+        ]);
     }
 
 }
