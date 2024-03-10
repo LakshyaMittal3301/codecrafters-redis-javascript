@@ -1,6 +1,7 @@
 const net = require('net');
 const Encoder = require('./Encoder');
 const RequestParser = require('./RequestParser');
+const HashTable = require('./HashTable');
 
 function getUid(socket){
     return socket.remoteAddress + ':' + socket.remotePort;
@@ -10,6 +11,7 @@ class MasterServer {
     constructor(host, port){
         this.host = host;
         this.port = port;
+        this.dataStore = new HashTable();
         this.clientBuffers = {};
     }
 
@@ -61,6 +63,12 @@ class MasterServer {
             case 'echo':
                 socket.write(this.handleEcho(args.slice(1)));
                 break;
+            case 'set':
+                socket.write(this.handleSet(args.slice(1)));
+                break;
+            case 'get':
+                socket.write(this.handleGet(args.slice(1)));
+                break;
         }
     }
 
@@ -71,6 +79,22 @@ class MasterServer {
     handleEcho(args){
         return Encoder.createBulkString(args[0]);
     }
+
+    handleSet(args){
+        let key = args[0];
+        let value = args[1];
+        this.dataStore.insert(key, value);
+        return Encoder.createSimpleString('OK');
+    }
+
+    handleGet(args){
+        let key = args[0];
+        if(this.dataStore.has(key)){
+            return Encoder.createBulkString(this.dataStore.get(key));
+        }
+        return Encoder.createBulkString('', true);
+    }
+
 }
 
 module.exports = MasterServer;

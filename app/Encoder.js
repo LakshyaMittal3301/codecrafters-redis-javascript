@@ -4,7 +4,10 @@ class Encoder {
     }
 
     static createBulkString(string, isNull = false){
-        return `$${string.length}\r\n${string}\r\n`;
+        if(!isNull){
+            return `$${string.length}\r\n${string}\r\n`;
+        }
+        return `$-1\r\n`;
     }
 }
 
