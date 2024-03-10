@@ -75,6 +75,9 @@ class MasterServer {
             case 'info':
                 socket.write(this.handleInfo(args.slice(1)));
                 break;
+            case 'replconf':
+                socket.write(this.handleReplconf(args.slice(1)));
+                break;
         }
     }
 
@@ -117,6 +120,10 @@ class MasterServer {
             response += `master_repl_offset:${this.masterReplOffset}`;
         }
         return Encoder.createBulkString(response);
+    }
+
+    handleReplconf(args){
+        return Encoder.createSimpleString('OK');
     }
 
 }
