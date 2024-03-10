@@ -153,10 +153,11 @@ class MasterServer {
             const socket = replica.socket;
             socket.write(request);
         }
+        this.masterReplOffset += request.length;
     }
 
     handleWait(args){
-        if(Object.keys(this.replicas).length === 0) return Encoder.createInteger(0);
+        return Encoder.createInteger(Object.keys(this.replicas).length);
     }
 
 }
