@@ -75,6 +75,15 @@ class SlaveServer {
                     Encoder.createBulkString('capa'),
                     Encoder.createBulkString('psync2')
                 ]));
+            } 
+            else if(this.handshakeStep === 3){
+                if(masterResponse !== Encoder.createSimpleString('ok')) return;
+                this.handshakeStep = 4;
+                socket.write(Encoder.createArray([
+                    Encoder.createBulkString('PSYNC'),
+                    Encoder.createBulkString('?'),
+                    Encoder.createBulkString('-1')
+                ]));
             }
         });
 
