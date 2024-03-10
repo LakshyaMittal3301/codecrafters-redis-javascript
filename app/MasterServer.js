@@ -69,6 +69,9 @@ class MasterServer {
             case 'get':
                 socket.write(this.handleGet(args.slice(1)));
                 break;
+            case 'info':
+                socket.write(this.handleInfo(args.slice(1)));
+                break;
         }
     }
 
@@ -100,6 +103,15 @@ class MasterServer {
             return Encoder.createBulkString('', true);
         }
         return Encoder.createBulkString(value);
+    }
+
+    handleInfo(args){
+        let section = args[0].toLowerCase();
+        let response;
+        if(section === 'replication'){
+            response = Encoder.createBulkString('role:master');
+        }
+        return response;
     }
 
 }
