@@ -1,14 +1,9 @@
-const net = require("net");
+const MasterServer = require("./MasterServer");
+
 const HOST = 'localhost';
 const PORT = '6379';
 
 (function init(){
-    const server = net.createServer((socket) => {
-      // Handle connection
-    });
-    
-    server.listen(PORT, HOST, () => {
-        console.log(`Server Listening on ${HOST}:${PORT}`);
-    });
-
+    let server = new MasterServer(HOST, PORT);
+    server.startServer();
 })()
