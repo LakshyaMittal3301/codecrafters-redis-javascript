@@ -13,6 +13,9 @@ class MasterServer {
         this.port = port;
         this.dataStore = new HashTable();
         this.clientBuffers = {};
+
+        this.masterReplId = '8371b4fb1155b71f4a04d3e1bc3e18c4a990aeeb';
+        this.masterReplOffset = 0;
     }
 
     startServer(){
@@ -107,11 +110,13 @@ class MasterServer {
 
     handleInfo(args){
         let section = args[0].toLowerCase();
-        let response;
+        let response = '';
         if(section === 'replication'){
-            response = Encoder.createBulkString('role:master');
+            response = 'role:master\n';
+            response += `master_replid:${this.masterReplId}\n`;
+            response += `master_repl_offset:${this.masterReplOffset}`;
         }
-        return response;
+        return Encoder.createBulkString(response);
     }
 
 }
