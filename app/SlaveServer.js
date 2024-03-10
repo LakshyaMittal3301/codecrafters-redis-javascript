@@ -18,6 +18,7 @@ class SlaveServer {
     }
 
     startServer(){
+        this.performHandshake();
         const server = net.createServer((socket) => {
             this.clientBuffers[getUid(socket)] = '';
 
@@ -41,6 +42,32 @@ class SlaveServer {
         server.listen(this.port, this.host, () => {
             console.log(`Server Listening on ${this.host}:${this.port}`);
         });
+    }
+
+    performHandshake(){
+        const socket = net.createConnection({host: this.masterHost, port: this.masterPort}, () => {
+            console.log(`Connected to master server on ${this.masterHost}:${this.masterPort}`);
+        });
+        
+        this.masterSocket = socket;
+        
+        socket.write(Encoder.createArray([
+            Encoder.createBulkString('PING')
+        ]));
+        this.handshakeStep = 1;
+
+        socket.on('data', (data) => {
+
+        });
+
+        socket.on(`error`, (err) => {
+            console.log(`Error from master server connection : ${err}`);
+        });
+
+        socket.on('close', () => {
+            console.log('Connection closed');
+        });
+
     }
 
     processClientBuffer(socket){
