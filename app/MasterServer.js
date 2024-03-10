@@ -1,5 +1,6 @@
 const net = require('net');
 const Encoder = require('./Encoder');
+const RequestParser = require('./RequestParser');
 
 function getUid(socket){
     return socket.remoteAddress + ':' + socket.remotePort;
@@ -41,20 +42,34 @@ class MasterServer {
     processClientBuffer(socket){
         const clientKey = getUid(socket);
         const buffer = this.clientBuffers[clientKey];
-        let command = 'ping';
-        this.handleCommand(socket, command);
+        let requestParser = new RequestParser(buffer);
+        while(true){
+            let args = requestParser.parse();
+            if(args.length === 0) break;
+            this.handleCommand(socket, args);
+        }
+
+        this.clientBuffers[clientKey] = requestParser.getRemainingRequest();
     }
 
-    handleCommand(socket, command, args = []){
+    handleCommand(socket, args){
+        let command = args[0].toLowerCase();
         switch(command) {
             case 'ping':
                 socket.write(this.handlePing());    
+                break;
+            case 'echo':
+                socket.write(this.handleEcho(args.slice(1)));
                 break;
         }
     }
 
     handlePing(){
         return Encoder.createSimpleString('PONG');
+    }
+
+    handleEcho(args){
+        return Encoder.createBulkString(args[0]);
     }
 }
 
