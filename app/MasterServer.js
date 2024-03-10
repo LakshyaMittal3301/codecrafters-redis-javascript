@@ -86,6 +86,9 @@ class MasterServer {
                 socket.write(this.handlePsync(args.slice(1), socket));
                 this.replicas[getUid(socket)] = {socket, state: 'connected'};
                 break;
+            case 'wait':
+                socket.write(this.handleWait(args.slice(1)));
+                break;
         }
     }
 
@@ -150,6 +153,10 @@ class MasterServer {
             const socket = replica.socket;
             socket.write(request);
         }
+    }
+
+    handleWait(args){
+        if(Object.keys(this.replicas).length === 0) return Encoder.createInteger(0);
     }
 
 }
