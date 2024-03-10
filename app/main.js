@@ -1,11 +1,14 @@
 const net = require("net");
+const HOST = 'localhost';
+const PORT = '6379';
 
-// You can use print statements as follows for debugging, they'll be visible when running tests.
-console.log("Logs from your program will appear here!");
+(function init(){
+    const server = net.createServer((socket) => {
+      // Handle connection
+    });
+    
+    server.listen(PORT, HOST, () => {
+        console.log(`Server Listening on ${HOST}:${PORT}`);
+    });
 
-// Uncomment this block to pass the first stage
-// const server = net.createServer((connection) => {
-//   // Handle connection
-// });
-//
-// server.listen(6379, "127.0.0.1");
+})()
