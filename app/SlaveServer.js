@@ -85,6 +85,28 @@ class SlaveServer {
                     Encoder.createBulkString('-1')
                 ]));
             }
+            else if(this.handshakeStep === 4){
+                if(!masterResponse.startsWith('+fullresync')) return;
+                let idx = masterResponse.indexOf('\r\n');
+                idx += 3;
+                let sizeOfRDB = 0;
+                while(masterResponse[idx] !== '\r'){
+                    sizeOfRDB = (sizeOfRDB * 10) + (masterResponse[idx] - '0');
+                    idx++;
+                }
+                idx += 2;
+                let rdbFileData = masterResponse.slice(idx, idx + sizeOfRDB);
+                idx += sizeOfRDB;
+                masterResponse = data.toString().slice(idx);
+                this.masterBuffer = '';
+                this.handshakeStep = 5;
+            }
+            if(this.handshakeStep === 5){
+                if(masterResponse === '') return;
+                this.masterBuffer += masterResponse;
+                this.processMasterBuffer();
+
+            }
         });
 
         socket.on(`error`, (err) => {
@@ -104,18 +126,36 @@ class SlaveServer {
         while(true){
             let args = requestParser.parse();
             if(args.length === 0) break;
-            this.handleCommand(socket, args);
+            let currentRequest = requestParser.currentRequest;
+            this.handleCommand(socket, args, currentRequest);
         }
 
         this.clientBuffers[clientKey] = requestParser.getRemainingRequest();
     }
 
-    handleCommand(socket, args){
+    processMasterBuffer(){
+        const buffer = this.masterBuffer;
+        let requestParser = new RequestParser(buffer);
+        while(true){
+            let args = requestParser.parse();
+            if(args.length === 0) break;
+            let currentRequest = requestParser.currentRequest;
+            this.handleCommand(this.masterSocket, args, currentRequest);
+        }
+    }
+
+    handleCommand(socket, args, request){
         let command = args[0].toLowerCase();
         switch(command) {
             case 'info':
                 socket.write(this.handleInfo(args.slice(1)));
                 break;
+            case 'set':
+                this.handleSet(args.slice(1));
+                break;
+            case 'get':
+                socket.write(this.handleGet(args.slice(1)));
+            
         }
     }
 
@@ -126,6 +166,27 @@ class SlaveServer {
             response = Encoder.createBulkString('role:slave');
         }
         return response;
+    }
+
+    handleSet(args){
+        let key = args[0];
+        let value = args[1];
+        if(args.length == 2){
+            this.dataStore.insert(key, value);
+        } else{
+            let arg = args[2];
+            let expiryTime = args[3];
+            this.dataStore.insertWithExpiry(key, value, expiryTime);
+        }
+    }
+
+    handleGet(args){
+        let key = args[0];
+        let value = this.dataStore.get(key);
+        if(value === null){
+            return Encoder.createBulkString('', true);
+        }
+        return Encoder.createBulkString(value);
     }
 
 }
