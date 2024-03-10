@@ -15,6 +15,10 @@ class SlaveServer {
         this.masterPort = masterPort;
         this.dataStore = new HashTable();
         this.clientBuffers = {};
+
+        this.masterBuffer = '';
+        this.masterSocket = null;
+        this.masterOffset = 0;
     }
 
     startServer(){
@@ -141,6 +145,7 @@ class SlaveServer {
             if(args.length === 0) break;
             let currentRequest = requestParser.currentRequest;
             this.handleCommand(this.masterSocket, args, currentRequest);
+            this.masterOffset += currentRequest.length;
         }
         this.masterBuffer = requestParser.getRemainingRequest();
     }
@@ -198,7 +203,7 @@ class SlaveServer {
         return Encoder.createArray([
             Encoder.createBulkString('REPLCONF'),
             Encoder.createBulkString('ACK'),
-            Encoder.createBulkString(`0`),
+            Encoder.createBulkString(`${this.masterOffset}`),
         ]);
     }
 
