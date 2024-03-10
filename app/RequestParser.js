@@ -12,6 +12,7 @@ class RequestParser {
     constructor(buffer){
         this.request = buffer;
         this.cursor = 0;
+        this.currentRequest = '';
     }
 
     parse(){
@@ -28,8 +29,10 @@ class RequestParser {
         catch(err){
             this.cursor = startCursor;
             this.args = [];
+            this.currentRequest = '';
         } 
         finally {
+            this.currentRequest = this.request.slice(startCursor, this.cursor);
             return this.args;
         }
 
