@@ -83,16 +83,23 @@ class MasterServer {
     handleSet(args){
         let key = args[0];
         let value = args[1];
-        this.dataStore.insert(key, value);
+        if(args.length == 2){
+            this.dataStore.insert(key, value);
+        } else{
+            let arg = args[2];
+            let expiryTime = args[3];
+            this.dataStore.insertWithExpiry(key, value, expiryTime);
+        }
         return Encoder.createSimpleString('OK');
     }
 
     handleGet(args){
         let key = args[0];
-        if(this.dataStore.has(key)){
-            return Encoder.createBulkString(this.dataStore.get(key));
+        let value = this.dataStore.get(key);
+        if(value === null){
+            return Encoder.createBulkString('', true);
         }
-        return Encoder.createBulkString('', true);
+        return Encoder.createBulkString(value);
     }
 
 }
