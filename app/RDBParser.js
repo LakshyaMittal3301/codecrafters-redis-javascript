@@ -181,7 +181,7 @@ class RDBParser{
     }
 
     read8Bytes(){
-        let bytes = +this.buffer.readBigUint64LE(this.cursor);
+        let bytes = this.buffer.readBigUint64LE(this.cursor);
         this.cursor += 8;
         return bytes;
     }
