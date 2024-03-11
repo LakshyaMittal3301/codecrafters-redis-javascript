@@ -20,11 +20,12 @@ class HashTable{
         if(!this.map.has(key)) this.map.set(key, {value: [], type: 'stream'});
         let existingValue = this.map.get(key);
         
-        if(value['id'] === '*'){
-            throw new Error('Case yet to be handled');
+        let currentId = value['id'];
+
+        if(currentId === '*'){
+            currentId = `${Date.now()}-*`;
         }
         
-        let currentId = value['id'];
         let currentIdMilisecond = currentId.split('-')[0];
         let currentIdSequence = currentId.split('-')[1];
         
