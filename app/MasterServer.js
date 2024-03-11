@@ -111,6 +111,9 @@ class MasterServer {
             case 'keys':
                 socket.write(this.handleKeys(args.slice(1)));
                 break;
+            case 'type':
+                socket.write(this.handleType(args.slice(1)));
+                break;
         }
     }
 
@@ -182,6 +185,16 @@ class MasterServer {
             Encoder.createBulkString(arg),
             Encoder.createBulkString(this.config[arg])
         ]);
+    }
+
+    handleType(args){
+        let key = args[0];
+        let type = this.dataStore.getType(key);
+        if(type === null){
+            return Encoder.createSimpleString('none');
+        }else{
+            return Encoder.createSimpleString(type);
+        }
     }
 
     propagate(request){

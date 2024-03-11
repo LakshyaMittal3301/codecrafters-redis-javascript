@@ -3,17 +3,17 @@ class HashTable{
         this.map = new Map();
     }
 
-    insert(key, value){
-        this.insertWithExpiry(key, value, 1000 * 60 * 60 * 24);
+    insert(key, value, type = 'string'){
+        this.insertWithExpiry(key, value, 1000 * 60 * 60 * 24, type);
     }
 
-    insertWithExpiry(key, value, expiry){
+    insertWithExpiry(key, value, expiry, type = 'string'){
         let expiryTimestamp = parseInt(expiry) + Date.now();
-        this.insertKeyWithTimeStamp(key, value, expiryTimestamp);
+        this.insertKeyWithTimeStamp(key, value, expiryTimestamp, type);
     }
 
-    insertKeyWithTimeStamp(key, value, timestamp){
-        this.map.set(key, {value, expiry: timestamp});
+    insertKeyWithTimeStamp(key, value, timestamp, type = 'string'){
+        this.map.set(key, {value, expiry: timestamp, type});
     }
 
     get(key){
@@ -34,6 +34,13 @@ class HashTable{
 
     getAllKeys(){
         return [...this.map.keys()];
+    }
+
+    getType(key){
+        if(this.has(key)){
+            return this.map.get(key).type;
+        }
+        return null;
     }
 }
 

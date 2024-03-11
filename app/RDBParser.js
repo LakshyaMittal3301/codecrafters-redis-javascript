@@ -97,7 +97,6 @@ class RDBParser{
     }
 
     readEOF(){
-        console.log(`Read EOF`);
     }
 
     readKeyWithoutExpiry(valueType){
