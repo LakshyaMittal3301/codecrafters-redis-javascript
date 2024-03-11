@@ -13,7 +13,16 @@ class HashTable{
     }
 
     insertKeyWithTimeStamp(key, value, timestamp, type = 'string'){
-        this.map.set(key, {value, expiry: timestamp, type});
+        if(type === 'string'){
+            this.map.set(key, {value, expiry: timestamp, type});
+        } else if(type === 'stream'){
+            if(!this.map.has(key)) this.map.set(key, {value: [], expiry: timestamp, type});
+            let existingValue = this.map.get(key);
+            existingValue.value.push(value);
+            this.map.set(key, existingValue); 
+        } else{
+            throw new Error(`Data Type not handled`);
+        }
     }
 
     get(key){

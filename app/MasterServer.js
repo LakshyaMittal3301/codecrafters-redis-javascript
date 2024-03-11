@@ -114,6 +114,9 @@ class MasterServer {
             case 'type':
                 socket.write(this.handleType(args.slice(1)));
                 break;
+            case 'xadd':
+                socket.write(this.handleXadd(args.slice(1)));
+                break;
         }
     }
 
@@ -195,6 +198,19 @@ class MasterServer {
         }else{
             return Encoder.createSimpleString(type);
         }
+    }
+
+    handleXadd(args){
+        let streamKey = args[0];
+        let streamEntry = {};
+        streamEntry['id'] = args[1];
+        for(let i = 2; i < args.length; i+=2){
+            let entryKey = args[i];
+            let entryValue = args[i+1];
+            streamEntry[entryKey] = entryValue;
+        }
+        this.dataStore.insert(streamKey, streamEntry, 'stream');
+        return Encoder.createBulkString(args[1]); 
     }
 
     propagate(request){
