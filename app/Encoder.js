@@ -17,6 +17,10 @@ class Encoder {
     static createInteger(num){
         return `:${num}\r\n`;
     }
+
+    static createSimpleError(message){
+        return `-${message}\r\n`;
+    }
 }
 
 module.exports = Encoder;

@@ -203,13 +203,21 @@ class MasterServer {
     handleXadd(args){
         let streamKey = args[0];
         let streamEntry = {};
-        streamEntry['id'] = args[1];
+        let streamEntryId = args[1];
+        streamEntry['id'] = streamEntryId;
+
         for(let i = 2; i < args.length; i+=2){
             let entryKey = args[i];
             let entryValue = args[i+1];
             streamEntry[entryKey] = entryValue;
         }
-        this.dataStore.insert(streamKey, streamEntry, 'stream');
+
+        if(streamEntryId === '0-0'){
+            return Encoder.createSimpleError('ERR The ID specified in XADD must be greater than 0-0');
+        }
+        if(!this.dataStore.insert(streamKey, streamEntry, 'stream')){
+            return Encoder.createSimpleError('ERR The ID specified in XADD is equal or smaller than the target stream top item');
+        }
         return Encoder.createBulkString(args[1]); 
     }
 
