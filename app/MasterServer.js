@@ -80,14 +80,14 @@ class MasterServer {
                 socket.write(this.handleInfo(args.slice(1)));
                 break;
             case 'replconf':
-                socket.write(this.handleReplconf(args.slice(1)));
+                this.handleReplconf(args.slice(1), socket);
                 break;
             case 'psync':
                 socket.write(this.handlePsync(args.slice(1), socket));
                 this.replicas[getUid(socket)] = {socket, state: 'connected'};
                 break;
             case 'wait':
-                socket.write(this.handleWait(args.slice(1)));
+                this.handleWait(args.slice(1), socket, request);
                 break;
         }
     }
@@ -133,8 +133,13 @@ class MasterServer {
         return Encoder.createBulkString(response);
     }
 
-    handleReplconf(args){
-        return Encoder.createSimpleString('OK');
+    handleReplconf(args, socket){
+        let arg = args[0].toLowerCase();
+        if(arg === 'ack'){
+            this.acknowledgeReplica(parseInt(args[1]));
+        } else{
+            socket.write(Encoder.createSimpleString('OK'));
+        }
     }
 
     handlePsync(args, socket){
@@ -156,8 +161,53 @@ class MasterServer {
         this.masterReplOffset += request.length;
     }
 
-    handleWait(args){
-        return Encoder.createInteger(Object.keys(this.replicas).length);
+    handleWait(args, socket, request){
+        if(Object.keys(this.replicas).length === 0) {
+            socket.write(Encoder.createInteger(0));
+            return;
+        }
+        if(this.masterReplOffset === 0){
+            socket.write(Encoder.createInteger(Object.keys(this.replicas).length));
+            return;
+        }
+
+        let numOfReqReplicas = args[0];
+        let timeoutTime = args[1];
+
+        // Register a wait
+        this.wait = {};
+        this.wait.numOfAckReplicas = 0;
+        this.wait.numOfReqReplicas = numOfReqReplicas;
+        this.wait.socket = socket;
+        this.wait.isDone = false;
+        this.wait.request = request;
+        this.wait.timeout = setTimeout(() => {
+            this.respondToWait();
+        }, timeoutTime);
+        
+        for(const replica of Object.values(this.replicas)){
+            const socket = replica.socket;
+            socket.write(Encoder.createArray([
+                Encoder.createBulkString('REPLCONF'),
+                Encoder.createBulkString('GETACK'),
+                Encoder.createBulkString('*')
+            ]));
+        }
+    }
+    
+    respondToWait(){
+        clearTimeout(this.wait.timeout);
+        this.masterReplOffset += this.wait.request.length;
+        this.wait.socket.write(Encoder.createInteger(this.wait.numOfAckReplicas));
+        this.wait.isDone = true;
+    }
+
+    acknowledgeReplica(replicaOffset){
+        if(this.wait.isDone) return;
+        if(replicaOffset >= this.masterReplOffset){
+            this.wait.numOfAckReplicas++;
+            if(this.wait.numOfAckReplicas >= this.wait.numOfReqReplicas) this.respondToWait();
+        }
     }
 
 }
