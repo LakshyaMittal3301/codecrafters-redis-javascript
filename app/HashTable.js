@@ -3,48 +3,72 @@ class HashTable{
         this.map = new Map();
     }
 
-    insert(key, value, type = 'string'){
-        return this.insertWithExpiry(key, value, 1000 * 60 * 60 * 24, type);
+    insert(key, value){
+        this.insertWithExpiry(key, value, 1000 * 60 * 60 * 24);
     }
 
-    insertWithExpiry(key, value, expiry, type = 'string'){
+    insertWithExpiry(key, value, expiry){
         let expiryTimestamp = parseInt(expiry) + Date.now();
-        return this.insertKeyWithTimeStamp(key, value, expiryTimestamp, type);
+        this.insertKeyWithTimeStamp(key, value, expiryTimestamp);
     }
 
-    insertKeyWithTimeStamp(key, value, timestamp, type = 'string'){
-        if(type === 'string'){
-            this.map.set(key, {value, expiry: timestamp, type});
-            return true;
-        } else if(type === 'stream'){
-            if(!this.map.has(key)) this.map.set(key, {value: [], expiry: timestamp, type});
-            let existingValue = this.map.get(key);
+    insertKeyWithTimeStamp(key, value, timestamp){
+        this.map.set(key, {value, expiry: timestamp, type: 'string'});
+    }
 
+    insertStream(key, value){
+        if(!this.map.has(key)) this.map.set(key, {value: [], type: 'stream'});
+        let existingValue = this.map.get(key);
+        
+        if(value['id'] === '*'){
+            throw new Error('Case yet to be handled');
+        }
+        
+        let currentId = value['id'];
+        let currentIdMilisecond = currentId.split('-')[0];
+        let currentIdSequence = currentId.split('-')[1];
+        
+        if(currentIdSequence === '*'){
             if(existingValue.value.length === 0){
-                existingValue.value.push(value);
-                this.map.set(key, existingValue); 
-                return true;
+                if(currentIdMilisecond === '0') currentIdSequence = '1';
+                else currentIdSequence = '0';
+                currentId = currentIdMilisecond + '-' + currentIdSequence;
+            } else{
+                let lastEntry = existingValue.value.slice(-1)[0];
+                let lastId = lastEntry['id'].split('-');
+                let lastIdMilisecond = lastId[0];
+                let lastIdSequence = lastId[1];
+    
+                if(currentIdMilisecond < lastIdMilisecond) return null;
+                if(currentIdMilisecond === lastIdMilisecond){
+                    currentIdSequence = `${parseInt(lastIdSequence) + 1}`;
+                    currentId = currentIdMilisecond + '-' + currentIdSequence;
+                }
+                else {
+                    currentIdSequence = '0';
+                    currentId = currentIdMilisecond + '-' + currentIdSequence;   
+                }
             }
-
-            let lastEntry = existingValue.value.slice(-1)[0];
-            let lastId = lastEntry['id'].split('-');
-            let lastIdMilisecond = lastId[0];
-            let lastIdSequence = lastId[1];
-            
-            let currentId = value['id'].split('-');
-            let currentIdMilisecond = currentId[0];
-            let currentIdSequence = currentId[1];
-
-            if(currentIdMilisecond < lastIdMilisecond) return false;
-            if(currentIdMilisecond === lastIdMilisecond && currentIdSequence <= lastIdSequence) return false;
-
+            value['id'] = currentId;
             existingValue.value.push(value);
             this.map.set(key, existingValue); 
-            return true;
-
-        } else{
-            throw new Error(`Data Type not handled`);
+            return currentId;
         }
+
+        if(existingValue.value.length !== 0){
+            let lastEntry = existingValue.value.slice(-1)[0];
+            let lastId = lastEntry['id'];
+            let lastIdMilisecond = lastId.split('-')[0];
+            let lastIdSequence = lastId.split('-')[1];
+            
+    
+            if(currentIdMilisecond < lastIdMilisecond) return null;
+            if(currentIdMilisecond === lastIdMilisecond && currentIdSequence <= lastIdSequence) return null;
+        }
+
+        existingValue.value.push(value);
+        this.map.set(key, existingValue); 
+        return currentId;
     }
 
     get(key){

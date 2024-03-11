@@ -215,10 +215,11 @@ class MasterServer {
         if(streamEntryId === '0-0'){
             return Encoder.createSimpleError('ERR The ID specified in XADD must be greater than 0-0');
         }
-        if(!this.dataStore.insert(streamKey, streamEntry, 'stream')){
+        let entryId = this.dataStore.insertStream(streamKey, streamEntry)
+        if(entryId === null){
             return Encoder.createSimpleError('ERR The ID specified in XADD is equal or smaller than the target stream top item');
         }
-        return Encoder.createBulkString(args[1]); 
+        return Encoder.createBulkString(entryId); 
     }
 
     propagate(request){
