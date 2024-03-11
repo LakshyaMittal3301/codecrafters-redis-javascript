@@ -8,8 +8,12 @@ class HashTable{
     }
 
     insertWithExpiry(key, value, expiry){
-        let expiryMs = parseInt(expiry) + Date.now();
-        this.map.set(key, {value, expiry: expiryMs});
+        let expiryTimestamp = parseInt(expiry) + Date.now();
+        this.insertKeyWithTimeStamp(key, value, expiryTimestamp);
+    }
+
+    insertKeyWithTimeStamp(key, value, timestamp){
+        this.map.set(key, {value, expiry: timestamp});
     }
 
     get(key){
@@ -26,6 +30,10 @@ class HashTable{
             return false;
         }
         return true;
+    }
+
+    getAllKeys(){
+        return [...this.map.keys()];
     }
 }
 
