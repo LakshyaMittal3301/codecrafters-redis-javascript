@@ -80,6 +80,7 @@ class HashTable{
     }
 
     getStream(key, start, end){
+        if(start === '-') start = '0-1';
         if(!start.includes('-')) start += `-0`;
         if(!end.includes('-')) end += `-${Number.MAX_SAFE_INTEGER}`;
         let entries = this.map.get(key).value;
