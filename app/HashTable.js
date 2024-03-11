@@ -105,9 +105,11 @@ class HashTable{
         return ret;
     }
 
-    getStreamAfter(keys, start){
+    getStreamAfter(keys, startIds){
         let finalRet = [];
-        for(const key of keys){
+        for(let i = 0; i < keys.length; i++){
+            const key = keys[i];
+            const start = startIds[i];
             let entries = this.map.get(key).value;
             entries = entries.filter((entry) => entry.id > start);
 

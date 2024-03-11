@@ -248,9 +248,11 @@ class MasterServer {
     }
 
     handleXread(args){
-        let streamKeys = [args[1]];
-        let startId = args[2];
-        let entries = this.dataStore.getStreamAfter(streamKeys, startId);
+        args = args.slice(1);
+        const mid = Math.ceil(args.length / 2);
+        let streamKeys = args.slice(0, mid);
+        let startIds = args.slice(mid);
+        let entries = this.dataStore.getStreamAfter(streamKeys, startIds);
         let ret = [];
         for(const keyEntries of entries){
             let key = keyEntries[0];
