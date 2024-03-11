@@ -120,6 +120,9 @@ class MasterServer {
             case 'xrange':
                 socket.write(this.handleXrange(args.slice(1)));
                 break;
+            case 'xread':
+                socket.write(this.handleXread(args.slice(1)));
+                break;
         }
     }
 
@@ -229,7 +232,7 @@ class MasterServer {
         let streamKey = args[0];
         let startId = args[1];
         let endId = args[2];
-        let entries = this.dataStore.getStream(streamKey, startId, endId);
+        let entries = this.dataStore.getStreamBetween(streamKey, startId, endId);
 
         let ret = [];
         for(const entry of entries){
@@ -242,6 +245,30 @@ class MasterServer {
         }
 
         return Encoder.createArray(ret);
+    }
+
+    handleXread(args){
+        let streamKeys = [args[1]];
+        let startId = args[2];
+        let entries = this.dataStore.getStreamAfter(streamKeys, startId);
+        let ret = [];
+        for(const keyEntries of entries){
+            let key = keyEntries[0];
+            let arr = [Encoder.createBulkString(key)];
+            let entriesForKey = [];
+            for(const entries of  keyEntries[1]){
+                let id = entries[0];
+                let keyValues = entries[1];
+                entriesForKey.push(Encoder.createArray([
+                    Encoder.createBulkString(id),
+                    Encoder.createArray(keyValues.map((value) => Encoder.createBulkString(value)))
+                ]));
+            }
+            arr.push(Encoder.createArray(entriesForKey));
+            ret.push(Encoder.createArray(arr));
+        }
+        let response = Encoder.createArray(ret);
+        return response;
     }
 
     propagate(request){
