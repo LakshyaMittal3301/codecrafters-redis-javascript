@@ -79,6 +79,30 @@ class HashTable{
         return null;
     }
 
+    getStream(key, start, end){
+        if(!start.includes('-')) start += `-0`;
+        if(!end.includes('-')) end += `-${Number.MAX_SAFE_INTEGER}`;
+        let entries = this.map.get(key).value;
+        entries = entries.filter((entry) => {
+            return entry.id >= start && entry.id <= end;
+        });
+
+        let ret = [];
+
+        for(const entry of entries){
+            let arr = [entry.id];
+            let subarr = [];
+            for(const entryKey of Object.keys(entry)){
+                if(entryKey === 'id') continue;
+                subarr.push(entryKey);
+                subarr.push(entry[entryKey]);
+            }
+            arr.push(subarr);
+            ret.push(arr);
+        }
+        return ret;
+    }
+
     has(key){
         if(!this.map.has(key)) return false;
         if(this.map.get(key).expiry < Date.now()){
