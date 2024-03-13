@@ -84,6 +84,7 @@ class HashTable{
         if(end === '+') end = `${Number.MAX_SAFE_INTEGER}-${Number.MAX_SAFE_INTEGER}`;
         if(!start.includes('-')) start += `-0`;
         if(!end.includes('-')) end += `-${Number.MAX_SAFE_INTEGER}`;
+        if(!this.map.has(key)) return [];
         let entries = this.map.get(key).value;
         entries = entries.filter((entry) => {
             return entry.id >= start && entry.id <= end;
@@ -110,6 +111,7 @@ class HashTable{
         for(let i = 0; i < keys.length; i++){
             const key = keys[i];
             const start = startIds[i];
+            if(!this.map.has(key)) continue;
             let entries = this.map.get(key).value;
             entries = entries.filter((entry) => entry.id > start);
 
@@ -126,6 +128,7 @@ class HashTable{
                 arr.push(subarr);
                 entriesForKey.push(arr);
             }
+            if(entriesForKey.length === 0) continue;
             ret.push(entriesForKey);
             finalRet.push(ret);
         }

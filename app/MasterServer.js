@@ -115,13 +115,13 @@ class MasterServer {
                 socket.write(this.handleType(args.slice(1)));
                 break;
             case 'xadd':
-                socket.write(this.handleXadd(args.slice(1)));
+                this.handleXadd(args.slice(1), socket);
                 break;
             case 'xrange':
                 socket.write(this.handleXrange(args.slice(1)));
                 break;
             case 'xread':
-                socket.write(this.handleXread(args.slice(1)));
+                this.handleXread(args.slice(1), socket);
                 break;
         }
     }
@@ -206,7 +206,7 @@ class MasterServer {
         }
     }
 
-    handleXadd(args){
+    handleXadd(args, socket){
         let streamKey = args[0];
         let streamEntry = {};
         let streamEntryId = args[1];
@@ -219,13 +219,16 @@ class MasterServer {
         }
 
         if(streamEntryId === '0-0'){
-            return Encoder.createSimpleError('ERR The ID specified in XADD must be greater than 0-0');
+            socket.write(Encoder.createSimpleError('ERR The ID specified in XADD must be greater than 0-0'));
+            return;
         }
         let entryId = this.dataStore.insertStream(streamKey, streamEntry)
         if(entryId === null){
-            return Encoder.createSimpleError('ERR The ID specified in XADD is equal or smaller than the target stream top item');
+            socket.write(Encoder.createSimpleError('ERR The ID specified in XADD is equal or smaller than the target stream top item'));
+            return;
         }
-        return Encoder.createBulkString(entryId); 
+        socket.write(Encoder.createBulkString(entryId)); 
+        this.checkBlock();
     }
 
     handleXrange(args){
@@ -233,6 +236,10 @@ class MasterServer {
         let startId = args[1];
         let endId = args[2];
         let entries = this.dataStore.getStreamBetween(streamKey, startId, endId);
+
+        if(entries.length === 0){
+            return Encoder.createBulkString('nil');
+        }
 
         let ret = [];
         for(const entry of entries){
@@ -247,12 +254,58 @@ class MasterServer {
         return Encoder.createArray(ret);
     }
 
-    handleXread(args){
-        args = args.slice(1);
+    handleXread(args, socket){
+        if(args[0].toLowerCase() !== 'block'){
+            args = args.slice(1);
+            const mid = Math.ceil(args.length / 2);
+            let streamKeys = args.slice(0, mid);
+            let startIds = args.slice(mid);
+            let entries = this.dataStore.getStreamAfter(streamKeys, startIds);
+            let response = this.getXreadResponse(entries);
+            socket.write(response);
+            return;
+        }
+        // console.log(`Inside handleXread, agrs passed: ${args}`);
+        let timeoutTime = Number.parseInt(args[1]);
+        // console.log(`timeout Time: ${timeoutTime}`);
+        args = args.slice(3);
         const mid = Math.ceil(args.length / 2);
         let streamKeys = args.slice(0, mid);
         let startIds = args.slice(mid);
-        let entries = this.dataStore.getStreamAfter(streamKeys, startIds);
+        this.block = {streamKeys, startIds, isDone: false};
+        this.block.socket = socket;
+        this.block.timeout = setTimeout(() => {
+            // console.log(`Executing Timeout`);
+            let entries = this.dataStore.getStreamAfter(this.block.streamKeys, this.block.startIds);
+            let response = this.getXreadResponse(entries);
+            console.log(`Response from timeout: ${response}`);
+            this.block.socket.write(response);
+            this.block.isDone = true;
+        }, timeoutTime);
+
+        // console.log(`Registering Block`);
+        // for(const [key, value] of Object.entries(this.block)){
+        //     console.log(`${key} : ${value}`);
+        // }
+
+        this.checkBlock();
+    }
+
+    checkBlock(){
+        if(!this.block || this.block.isDone) return;
+        let entries = this.dataStore.getStreamAfter(this.block.streamKeys, this.block.startIds);
+        // console.log(`Checking Block, stream Keys: ${this.block.streamKeys}, startIds: ${this.block.startIds}`);
+        if(entries.length === 0) return;
+        let response = this.getXreadResponse(entries);
+        this.block.socket.write(response);
+        this.block.isDone = true;
+        clearTimeout(this.block.timeout);
+    }
+
+    getXreadResponse(entries){
+        if(entries.length === 0){
+            return Encoder.createBulkString('nil');
+        }
         let ret = [];
         for(const keyEntries of entries){
             let key = keyEntries[0];
