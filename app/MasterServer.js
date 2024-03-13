@@ -270,6 +270,7 @@ class MasterServer {
         const mid = Math.ceil(args.length / 2);
         let streamKeys = args.slice(0, mid);
         let startIds = args.slice(mid);
+        startIds = this.processStartIds(streamKeys, startIds);
         this.block = {streamKeys, startIds, isDone: false};
         this.block.socket = socket;
         this.block.timeout = -1;
@@ -283,6 +284,22 @@ class MasterServer {
     
         }
         this.checkBlock();
+    }
+
+    processStartIds(streamKeys, startIds){
+        for(let i = 0; i < streamKeys.length; i++){
+            let key = streamKeys[i];
+            let startId = startIds[i];
+            if(startId !== '$') continue;
+            let entries = this.dataStore.get(key);
+            if(entries === null  || entries.length === 0) startId = '0-0';
+            let lastEntryId = entries.slice(-1)[0].id;
+            let lastEntryIdMS = lastEntryId.split('-')[0];
+            let lastEntryIdSeq = lastEntryId.split('-')[1];
+            startId = lastEntryIdMS + '-' + `${(Number.parseInt(lastEntryIdSeq))}`;
+            startIds[i] = startId;
+        }
+        return startIds;
     }
 
     checkBlock(){
