@@ -272,13 +272,16 @@ class MasterServer {
         let startIds = args.slice(mid);
         this.block = {streamKeys, startIds, isDone: false};
         this.block.socket = socket;
-        this.block.timeout = setTimeout(() => {
-            let entries = this.dataStore.getStreamAfter(this.block.streamKeys, this.block.startIds);
-            let response = this.getXreadResponse(entries);
-            this.block.socket.write(response);
-            this.block.isDone = true;
-        }, timeoutTime);
-
+        this.block.timeout = -1;
+        if(timeoutTime != 0){
+            this.block.timeout = setTimeout(() => {
+                let entries = this.dataStore.getStreamAfter(this.block.streamKeys, this.block.startIds);
+                let response = this.getXreadResponse(entries);
+                this.block.socket.write(response);
+                this.block.isDone = true;
+            }, timeoutTime);
+    
+        }
         this.checkBlock();
     }
 
@@ -289,7 +292,9 @@ class MasterServer {
         let response = this.getXreadResponse(entries);
         this.block.socket.write(response);
         this.block.isDone = true;
-        clearTimeout(this.block.timeout);
+        if(this.block.timeout != -1){
+            clearTimeout(this.block.timeout);
+        }
     }
 
     getXreadResponse(entries){
