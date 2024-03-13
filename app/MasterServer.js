@@ -265,9 +265,7 @@ class MasterServer {
             socket.write(response);
             return;
         }
-        // console.log(`Inside handleXread, agrs passed: ${args}`);
         let timeoutTime = Number.parseInt(args[1]);
-        // console.log(`timeout Time: ${timeoutTime}`);
         args = args.slice(3);
         const mid = Math.ceil(args.length / 2);
         let streamKeys = args.slice(0, mid);
@@ -275,18 +273,11 @@ class MasterServer {
         this.block = {streamKeys, startIds, isDone: false};
         this.block.socket = socket;
         this.block.timeout = setTimeout(() => {
-            // console.log(`Executing Timeout`);
             let entries = this.dataStore.getStreamAfter(this.block.streamKeys, this.block.startIds);
             let response = this.getXreadResponse(entries);
-            console.log(`Response from timeout: ${response}`);
             this.block.socket.write(response);
             this.block.isDone = true;
         }, timeoutTime);
-
-        // console.log(`Registering Block`);
-        // for(const [key, value] of Object.entries(this.block)){
-        //     console.log(`${key} : ${value}`);
-        // }
 
         this.checkBlock();
     }
@@ -294,7 +285,6 @@ class MasterServer {
     checkBlock(){
         if(!this.block || this.block.isDone) return;
         let entries = this.dataStore.getStreamAfter(this.block.streamKeys, this.block.startIds);
-        // console.log(`Checking Block, stream Keys: ${this.block.streamKeys}, startIds: ${this.block.startIds}`);
         if(entries.length === 0) return;
         let response = this.getXreadResponse(entries);
         this.block.socket.write(response);
@@ -304,7 +294,7 @@ class MasterServer {
 
     getXreadResponse(entries){
         if(entries.length === 0){
-            return Encoder.createBulkString('nil');
+            return Encoder.createBulkString('nil', true);
         }
         let ret = [];
         for(const keyEntries of entries){
